@@ -433,9 +433,9 @@ def hydrograph_metrics_cdf_plots(
   _, axes = plt. subplots(2, 4, figsize=(12, 6))
 
   for ax, metric in zip(axes.flatten(), METRICS_AXIS_LIMITS):
-
+        
     metric_filename =  f'{metric}.csv'
-
+        
     # Load Google and GloFAS metrics.
     glofas_path = data_paths.METRICS_DIR / 'hydrograph_metrics' / 'per_metric' / 'glofas_v3' / time_period_identifier / 'glofas_reanalysis' / metric_filename
     glofas_metrics_data = metrics_utils.load_metrics_df(filepath=glofas_path)
@@ -457,9 +457,9 @@ def hydrograph_metrics_cdf_plots(
         if lead_time == 0:
             plotdata = pd.concat([plotdata, glofas_metrics_data[
                 str(lead_time)].rename('glofas_reanalysis')], axis=1)
-
+        
         plotdata.dropna(inplace=True)
-
+        
         for experiment in plotdata:
 
             label = None
@@ -552,3 +552,11 @@ def return_period_cdf_plots(
       axes[idx, 0].get_legend().remove()
 
   plt.tight_layout()
+
+
+def cohen_d(x, y):
+  nx = len(x)
+  ny = len(y)
+  dof = nx + ny - 2
+  return (np.mean(x) - np.mean(y)) / np.sqrt(((nx-1)*np.std(x, ddof=1) ** 2 + (ny-1)*np.std(y, ddof=1) ** 2) / dof)
+
