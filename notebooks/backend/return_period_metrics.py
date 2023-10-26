@@ -1,17 +1,3 @@
-# Copyright 2023 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """Utilities to calculate return period metrics."""
 
 import os
@@ -32,8 +18,6 @@ from backend.return_period_calculator import exceptions
 from backend.return_period_calculator import return_period_calculator
 
 
-_OBS_VARIABLE = 'observation'
-
 
 RETURN_PERIOD_TIME_WINDOWS = [
     pd.Timedelta(0, unit='d'),
@@ -45,45 +29,76 @@ RETURN_PERIOD_TIME_WINDOWS = [
 def _true_positives_fraction_in_window(
     a_crossovers: np.ndarray,
     b_crossovers: np.ndarray,
+    discard_nans_in_window: bool,
     window_in_timesteps: int,
 ):
-  """Calculates fraction of crossovers that were hit within a window.
+    """Calculates fraction of crossovers that were hit within a window.
 
-  Handles NaNs by ignoring crossovers where array b is NaN anywhere
-  within the window around crossovers in array a.
+    Handles NaNs by ignoring crossovers where array b is NaN anywhere
+    within the window around crossovers in array a.
 
-  Args:
+    Args:
     a_crossovers: np.ndarray
       First 0/1/NaN indicator array of crossovers.
     b_crossovers: np.ndarray
       Second 0/1/NaN indicator array of crossovers.
+    discard_nans_in_window: bool
+      True if you want to throw out all samples from 'a' where 'b' has any nans in the window.
+      This is useful when 'b' are observations and you don't want to penalize a model due to
+      the fact that the observed record is incomplete.
     window_in_timesteps: int
       Window around a crossover in a to search for a crossover in b.
 
-  Returns:
+    Returns:
     Fraction of crossovers in a where (1) the corresponding window in b contains
     no NaNs and (2) a corresponding crossover exists in b.
-  """
-  a_crossover_idxs = np.where((a_crossovers != 0) & ~np.isnan(a_crossovers))[0]
-  b_crossover_idxs = np.where((b_crossovers != 0) & ~np.isnan(b_crossovers))[0]
-  b_nan_crossover_idxs = np.where(np.isnan(b_crossovers))[0]
+    """
+    a_crossover_idxs = np.where((a_crossovers != 0) & ~np.isnan(a_crossovers))[0]
+    b_crossover_idxs = np.where((b_crossovers != 0) & ~np.isnan(b_crossovers))[0]
+    b_nan_crossover_idxs = np.where(np.isnan(b_crossovers))[0]
 
-  # Count fraction of crossovers we hit.
-  total_count = 0
-  true_positives = 0
-  for a_idx in a_crossover_idxs:
-    # Do not count crossovers if there are NaNs in b within the window.
-    if np.any(
-        np.abs(b_nan_crossover_idxs - a_idx) <= window_in_timesteps + 1e-6
-    ):
-      continue
-    total_count += 1
-    if np.any(np.abs(b_crossover_idxs - a_idx) <= window_in_timesteps + 1e-6):
-      true_positives += 1
+    # Count fraction of crossovers we hit.
+    total_count = 0
+    true_positives = 0
+    for a_idx in a_crossover_idxs:
+        # Do not count crossovers if there are NaNs in b within the window.
+        if discard_nans_in_window and np.any(
+            np.abs(b_nan_crossover_idxs - a_idx) <= window_in_timesteps + 1e-6
+        ):
+            continue
+        total_count += 1
+        if np.any(np.abs(b_crossover_idxs - a_idx) <= window_in_timesteps + 1e-6):
+            true_positives += 1
 
-  if total_count > 0:
-    return true_positives / total_count
-  return np.nan
+#     import pdb; pdb.set_trace()
+
+    if total_count > 0:
+        return true_positives / total_count
+    
+    # This is a decision to define:
+    #  -- Precision as 0 if there are no predicted events but there are obsreved events.
+    #  -- Recall as 0 if there are no observed events but there are predicted events.
+    elif len(a_crossover_idxs) == 0 and len(b_crossover_idxs) > 0:
+        return 0
+
+    # This is a decision to define both precision and recall as 1 if there are no events to
+    # predict *and* the model predicts no events.
+    elif len(a_crossover_idxs) == 0 and len(b_crossover_idxs) == 0:
+        return 1
+    
+    # This is a decision to define:
+    #  -- Precision as 1 there are no observed data around any perdicted event.
+    #  -- Recall as 1 if there are no predicted data around any observed event.
+    # The second option should !not! be used. When the 'a' series are observations,
+    # (i.e., calculating recall), you should set `discard_nans_in_window` to False.
+    elif len(a_crossover_idxs) > 0 and discard_nans_in_window:
+        return 1
+        
+    else:
+        print(total_count, true_positives, len(a_crossover_idxs), len(b_crossover_idxs))
+        print('You should only get here if there are nans in your predictions. '
+              'If you see this message, please debug.')
+        return np.nan
 
 
 def _single_return_period_performance_metric(
@@ -96,45 +111,47 @@ def _single_return_period_performance_metric(
     return_period: float,
     window_in_timesteps: int,
 ) -> Tuple[Mapping[str, float], float]:
-  """Calculates hit/miss rates for a single return period and time window."""
+    """Calculates hit/miss rates for a single return period and time window."""
 
-  # Calculate flow values at return period. These can be different for obs and
-  # sim, and we want to test based on the model climatology.
-  if sim_return_period_calculator:
-    sim_flow_value = sim_return_period_calculator.flow_value_from_return_period(
-        return_period)
-  else:
-    sim_flow_value = np.nan
-  if obs_return_period_calculator:
-    obs_flow_value = obs_return_period_calculator.flow_value_from_return_period(
-        return_period)
-  else:
-    return {'precision': np.nan, 'recall': np.nan}, sim_flow_value
+    # Calculate flow values at return period. These can be different for obs and
+    # sim, and we want to test based on the model climatology.
+    if sim_return_period_calculator:
+        sim_flow_value = sim_return_period_calculator.flow_value_from_return_period(
+            return_period)
+    else:
+        sim_flow_value = np.nan
+    if obs_return_period_calculator:
+        obs_flow_value = obs_return_period_calculator.flow_value_from_return_period(
+            return_period)
+    else:
+        return {'precision': np.nan, 'recall': np.nan}, sim_flow_value
 
-  # Find obs points crossing return period threshold.
-  above_threshold = np.where(
-      np.isnan(observations),
-      np.nan,
-      (observations >= obs_flow_value).astype(float),
-  )
-  obs_crossovers = np.maximum(0, np.diff(above_threshold))
+    # Find obs points crossing return period threshold.
+    above_threshold = np.where(
+        np.isnan(observations),
+        np.nan,
+        (observations >= obs_flow_value).astype(float),
+    )
+    obs_crossovers = np.maximum(0, np.diff(above_threshold))
 
-  # Find sim points crossing return period threshold.
-  above_threshold = np.where(
-      np.isnan(simulations),
-      np.nan,
-      (simulations >= sim_flow_value).astype(float),
-  )
-  sim_crossovers = np.maximum(0, np.diff(above_threshold))
+    # Find sim points crossing return period threshold.
+    above_threshold = np.where(
+        np.isnan(simulations),
+        np.nan,
+        (simulations >= sim_flow_value).astype(float),
+    )
+    sim_crossovers = np.maximum(0, np.diff(above_threshold))
 
-  precision = _true_positives_fraction_in_window(
-      sim_crossovers, obs_crossovers, window_in_timesteps
-  )
-  recall = _true_positives_fraction_in_window(
-      obs_crossovers, sim_crossovers, window_in_timesteps
-  )
+#     import pdb; pdb.set_trace()
+    precision = _true_positives_fraction_in_window(
+        sim_crossovers, obs_crossovers, True, window_in_timesteps
+    )
+    
+    recall = _true_positives_fraction_in_window(
+        obs_crossovers, sim_crossovers, False, window_in_timesteps
+    )
 
-  return {'precision': precision, 'recall': recall}, sim_flow_value
+    return {'precision': precision, 'recall': recall}, sim_flow_value
 
 
 def calculate_return_period_performance_metrics(
@@ -238,6 +255,7 @@ def calculate_and_save_metrics_for_one_gague(
     ds: xarray.Dataset,
     gauge: str,
     sim_variable: str,
+    obs_variable: str,
     base_path: pathlib.Path,
     temporal_resolution: str = '1D',
     lead_times: list[str] = data_paths.LEAD_TIMES,
@@ -245,87 +263,82 @@ def calculate_and_save_metrics_for_one_gague(
     evaluation_time_period: Optional[list[str]] = None,
     path_modifier: Optional[str] = None,
 ) -> pd.DataFrame:
-  """Calculates return period metrics for many gauges."""
+    """Calculates return period metrics for many gauges."""
 
-  if gauge not in ds.gauge_id:
+    if gauge not in ds.gauge_id:
         return
 
-  # Check if gauge file already exists.
-  precision_filepath = metrics_utils.save_metrics_df(
-      df=None,
-      metric=gauge,
-      base_path=base_path,
-      path_modifier=f'{path_modifier}/precision',
-  )
-  recall_filepath = metrics_utils.save_metrics_df(
-      df=None,
-      metric=gauge,
-      base_path=base_path,
-      path_modifier=f'{path_modifier}/recall',
-  )
-#   if os.path.exists(precision_filepath) and os.path.exists(recall_filepath):
-#     return
-
-  # Initialize storage.
-  return_period_time_windows = [
-      w/temporal_resolution for w in RETURN_PERIOD_TIME_WINDOWS]
-
-  precision_metrics = pd.DataFrame(
-      index=pd.MultiIndex.from_product(
-          [evaluation_utils.RETURN_PERIODS, return_period_time_windows]),
-      columns=data_paths.LEAD_TIMES
-  )
-  recall_metrics = pd.DataFrame(
-      index=pd.MultiIndex.from_product(
-          [evaluation_utils.RETURN_PERIODS, return_period_time_windows]),
-      columns=data_paths.LEAD_TIMES
-  )
-
-  for lead_time in lead_times:
-    if 'lead_time' in ds.dims:
-      sim = ds.sel(gauge_id=gauge, lead_time=lead_time)[sim_variable].to_series()
-      obs = ds.sel(gauge_id=gauge, lead_time=lead_time)[_OBS_VARIABLE].to_series()
-    else:
-      sim = ds.sel(gauge_id=gauge)[sim_variable].to_series()
-      obs = ds.sel(gauge_id=gauge)[_OBS_VARIABLE].to_series()
-
-    # Pull time period.
-    if distribution_time_period is not None:
-      obs = obs.sel(time=slice(*distribution_time_period))
-      sim = sim.sel(time=slice(*distribution_time_period))
-
-    # Calculate the metrics.
-    metrics_dict, _ = calculate_return_period_performance_metrics(
-        predictions=sim,
-        observations=obs,
-        evaluation_time_period=evaluation_time_period,
+    # Check if gauge file already exists.
+    precision_filepath = metrics_utils.save_metrics_df(
+        df=None,
+        metric=gauge,
+        base_path=base_path,
+        path_modifier=f'{path_modifier}/precision',
     )
+    recall_filepath = metrics_utils.save_metrics_df(
+        df=None,
+        metric=gauge,
+        base_path=base_path,
+        path_modifier=f'{path_modifier}/recall',
+    )
+
+    # Initialize storage.
+    return_period_time_windows = [w/temporal_resolution for w in RETURN_PERIOD_TIME_WINDOWS]
+
+    precision_metrics = pd.DataFrame(
+        index=pd.MultiIndex.from_product(
+            [evaluation_utils.RETURN_PERIODS, return_period_time_windows]),
+        columns=data_paths.LEAD_TIMES
+    )
+    recall_metrics = pd.DataFrame(
+        index=pd.MultiIndex.from_product(
+            [evaluation_utils.RETURN_PERIODS, return_period_time_windows]),
+        columns=data_paths.LEAD_TIMES
+    )
+
+    for lead_time in lead_times:
+        if 'lead_time' in ds.dims:
+            sim = ds.sel(gauge_id=gauge, lead_time=lead_time)[sim_variable].to_series()
+            obs = ds.sel(gauge_id=gauge, lead_time=lead_time)[obs_variable].to_series()
+        else:
+            sim = ds.sel(gauge_id=gauge)[sim_variable].to_series()
+            obs = ds.sel(gauge_id=gauge)[obs_variable].to_series()
+
+        # Pull time period.
+        if distribution_time_period is not None:
+            obs = obs.sel(time=slice(*distribution_time_period))
+            sim = sim.sel(time=slice(*distribution_time_period))
+
+        # Calculate the metrics.
+        metrics_dict, _ = calculate_return_period_performance_metrics(
+          predictions=sim,
+          observations=obs,
+          evaluation_time_period=evaluation_time_period,
+        )
     
-    # Store calculated metrics in dataframe.
-    for rp in evaluation_utils.RETURN_PERIODS:
-      for w in return_period_time_windows:
+        # Store calculated metrics in dataframe.
+        for rp in evaluation_utils.RETURN_PERIODS:
+            for w in return_period_time_windows:
+                metric_name = f'return_period_{rp}_window_{w}_precision'
+                precision_metrics.loc[(rp, w), lead_time] = metrics_dict[metric_name]
+                metric_name = f'return_period_{rp}_window_{w}_recall'
+                recall_metrics.loc[(rp, w), lead_time] = metrics_dict[metric_name]
 
-        metric_name = f'return_period_{rp}_window_{w}_precision'
-        precision_metrics.loc[(rp, w), lead_time] = metrics_dict[metric_name]
+    # Save metrics for this gauge.
+    _ = metrics_utils.save_metrics_df(
+        df=recall_metrics,
+        metric=gauge,
+        base_path=base_path,
+        path_modifier=f'{path_modifier}/recall',
+    )
+    _ = metrics_utils.save_metrics_df(
+        df=precision_metrics,
+        metric=gauge,
+        base_path=base_path,
+        path_modifier=f'{path_modifier}/precision',
+    )
 
-        metric_name = f'return_period_{rp}_window_{w}_recall'
-        recall_metrics.loc[(rp, w), lead_time] = metrics_dict[metric_name]
-
-  # Save metrics for this gauge.
-  _ = metrics_utils.save_metrics_df(
-      df=recall_metrics,
-      metric=gauge,
-      base_path=base_path,
-      path_modifier=f'{path_modifier}/recall',
-  )
-  _ = metrics_utils.save_metrics_df(
-      df=precision_metrics,
-      metric=gauge,
-      base_path=base_path,
-      path_modifier=f'{path_modifier}/precision',
-  )
-
-  return
+    return
 
 # --- Main function to call from notebooks ----------------------------------
 
@@ -337,6 +350,7 @@ def compute_metrics(
     gauge_list: list[str],
     ds_dict: dict[str, xarray.Dataset],
     sim_variable: str,
+    obs_variable: str,
     evaluation_time_periods: Optional[list] = None,
     lead_times: Optional[list[int]] = None
 ) -> list[str]:
@@ -346,7 +360,7 @@ def compute_metrics(
         lead_times = data_paths.LEAD_TIMES
     
     if os.path.exists(working_path) and restart:
-      shutil.rmtree(working_path)
+        shutil.rmtree(working_path)
     loading_utils.create_remote_folder_if_necessary(working_path)
    
     if evaluation_time_periods is None:
@@ -363,6 +377,7 @@ def compute_metrics(
                     ds=ds_dict[experiment],
                     gauge=gauge,
                     sim_variable=sim_variable,
+                    obs_variable=obs_variable,
                     base_path=working_path,
                     path_modifier=experiment,
                     evaluation_time_period=evaluation_time_periods[gauge],

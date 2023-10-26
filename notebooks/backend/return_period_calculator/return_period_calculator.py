@@ -36,7 +36,7 @@ from backend.return_period_calculator import generalized_expected_moments_algori
 from backend.return_period_calculator import plotting_utilities
 from backend.return_period_calculator import theoretical_distribution_utilities as tdu
 
-_DEFAULT_PLOTTING_RETURN_PERIODS = np.array([2, 5, 10, 20, 50, 100])
+_DEFAULT_PLOTTING_RETURN_PERIODS = np.array([1.01, 2, 5, 10, 20, 50, 100])
 # The minimum years of record must be 2 or larger, since 2 are necessary to
 # fit a linear trend.
 _MIN_YEARS_OF_RECORD = 5

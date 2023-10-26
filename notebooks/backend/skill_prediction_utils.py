@@ -22,8 +22,8 @@ from sklearn.metrics import precision_recall_fscore_support
 import tqdm
 from typing import Optional
 
-N_KFOLD = 5
-N_TREES = 20
+N_KFOLD = 25
+N_TREES = 200
 
 
 def make_predictors(

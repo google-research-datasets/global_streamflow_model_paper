@@ -1,17 +1,3 @@
-# Copyright 2023 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """Utilities for managing gaguge groups for global model paper experiments."""
 
 import glob
@@ -27,51 +13,51 @@ from backend import data_paths
 def load_gauge_group(
     gauge_group_path: pathlib.Path
 ) -> list[str]:
-  """Loads and gauge group file."""
+    """Loads and gauge group file."""
 
-  with open(gauge_group_path, 'rt') as f:
-    lines = f.readlines()
+    with open(gauge_group_path, 'rt') as f:
+        lines = f.readlines()
 
-  gauges = [gauge.strip('\n') for gauge in lines]
+    gauges = [gauge.strip('\n') for gauge in lines]
 
-  return gauges
+    return gauges
 
 
 def write_gauge_group(filename: str, basins: list[str]):
-  with open(filename, 'wt') as f:
-    for basin in basins:
-      f.write("%s\n" % basin)
+    with open(filename, 'wt') as f:
+        for basin in basins:
+            f.write("%s\n" % basin)
 
 def get_full_gauge_group() -> list[str]:
-  """Returns the gauge group will all gauges used for the paper."""
-  return load_gauge_group(data_paths.FULL_GAUGE_GROUP_FILE)
+    """Returns the gauge group will all gauges used for the paper."""
+    return load_gauge_group(data_paths.FULL_GAUGE_GROUP_FILE)
 
 
 def load_experiment_gauge_groups(
     experiment_dir_name: str
 ) -> dict[str, list[str]]:
-  """Loads a dictionary of gauge groups for a split-sample experiment."""
- 
-  gauge_groups_dir = data_paths.GAUGE_GROUPS_DIR / experiment_dir_name
-  gauge_group_paths = glob.glob(str(gauge_groups_dir / '*'))
+    """Loads a dictionary of gauge groups for a split-sample experiment."""
 
-  print(f'Working on {experiment_dir_name} ...')
+    gauge_groups_dir = data_paths.GAUGE_GROUPS_DIR / experiment_dir_name
+    gauge_group_paths = glob.glob(str(gauge_groups_dir / '*'))
 
-  experiment_gauge_groups = {}
-  for path in tqdm.tqdm(gauge_group_paths):
-    split_name = pathlib.Path(path).stem
-    experiment_gauge_groups[split_name] = load_gauge_group(
-        gauge_group_path=path)
- 
-  return experiment_gauge_groups
+    print(f'Working on {experiment_dir_name} ...')
+
+    experiment_gauge_groups = {}
+    for path in tqdm.tqdm(gauge_group_paths):
+        split_name = pathlib.Path(path).stem
+        experiment_gauge_groups[split_name] = load_gauge_group(
+            gauge_group_path=path)
+
+    return experiment_gauge_groups
 
 
 def load_all_ungauged_gauge_groups() -> dict[str, dict[str, list[str]]]:
-  """Loads gauge groups for all ungauged experiments."""
-  return {
-      experiment: load_experiment_gauge_groups(
-          experiment_dir_name=experiment) 
-      for experiment in data_paths.UNGAUGED_EXPERIMENTS
-  }
+    """Loads gauge groups for all ungauged experiments."""
+    return {
+        experiment: load_experiment_gauge_groups(
+            experiment_dir_name=experiment) 
+        for experiment in data_paths.UNGAUGED_EXPERIMENTS
+    }
 
 
