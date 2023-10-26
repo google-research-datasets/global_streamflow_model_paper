@@ -22,7 +22,7 @@ The code in this repository is structured so that all analysis can be done with 
 
 1) Download model data and pre-calculated statistics from the associated Zenodo repository [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8139380.svg)](https://doi.org/10.5281/zenodo.8139380).
 
-2) Download and prepare Global Runoff Data Center (GRDC) streamflow observation data and model simulation data. 
+2) Download and prepare Global Runoff Data Center (GRDC) streamflow observation data and model simulation data. This step is not necessary if you want to use the pre-calculated statistics included in the Zenodo repository.
 
 3) Run notebooks to calclate metrics. This step is not necessary if you want to use the pre-calculated statistics included in the Zenodo repository.
 
@@ -63,7 +63,7 @@ You will need to download and unzip/untar the `global_model_data.tgz` tarball fr
 
 Your working directory should be the directory created by cloning this repository. Unpacking the tarball from the Zenodo repository will result in the following subdirectories: `~/model_data`, `~/metadata`, and `~/metrics`, and `~/gauge_groups_for_paper`. All of these subdirectories should be placed in the working directory so that the working directory contains `~/notebooks` (and other subdirectories included in this Github repository), as well as `~/model_data` (and all other subdirectories from the Zenodo repository). 
 
-### Step 2: Download GRDC Streamflow Observation Data
+### (Not Required) Step 2: Download GRDC Streamflow Observation Data
 Due to licensing restrictions, we are not allowed to share streamflow observation data from the Global Runoff Data Center (GRDC). Using the [GRDC Data Portal](https://portal.grdc.bafg.de/applications/public.html?publicuser=PublicUser), download GRDC data for all stations that are listed in the `~/gauge_groups/dual_lstm/grdc_filtered.txt` file. Download these as daily NetCDF files. This requires registering with the GRDC. You will likely have to download these data in multiple batches, resulting in multiple NetCDF files. If that is the case, name each of the NetCDF files uniqely and put them into a single directory somewhere on your local machine. Point to that directory using the `GRDC_DATA_DOWNLOAD_DIRECTORY` variable in the `~/notebooks/backend/data_paths.py` file, and then run the `~/notebooks/concatenate_grdc_downloads.ipynb` notebook to concatenate the download files into one netcdf file.
 
 GRDC Data Portal: https://portal.grdc.bafg.de/applications/public.html?publicuser=PublicUser
