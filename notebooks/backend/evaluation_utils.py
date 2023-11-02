@@ -283,6 +283,7 @@ def spatial_plot(
     ax.set_xticks([])
     ax.set_yticks([])
 
+    cbar = None
     if colorbar:
         cbaxes = inset_axes(ax, width='1%', height='90%', loc='center right')
         cbar = plt.colorbar(points, cax=cbaxes, orientation='vertical')
