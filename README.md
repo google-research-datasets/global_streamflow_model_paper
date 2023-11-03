@@ -20,7 +20,7 @@ This repository allows you to recreate the figures and statistics from the follo
 ## Overview
 The code in this repository is structured so that all analysis can be done with python notebooks in the `~/notebooks` directory. The expected runtime is approxiamtely one day for the full analysis. The steps are as follows:
 
-1) Download model data, metadata, and pre-calculated metrics from the associated Zenodo repository [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8139380.svg)](https://doi.org/10.5281/zenodo.8139380).
+1) Download model data, metadata, and pre-calculated metrics from the associated Zenodo repository [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10045596.svg)](https://doi.org/10.5281/zenodo.10045596).
 
 2) Download and prepare Global Runoff Data Center (GRDC) streamflow observation data and model simulation data. This step is not necessary if you want to use the pre-calculated statistics included in the Zenodo repository.
 
@@ -59,7 +59,7 @@ In the file `~/notebooks/backend/data_paths.py` change the local variable `_WORK
 
 ### Step 1: Download Model Data
 
-You will need to download and unzip/untar the tarballs from the Zenodo repository listed in the Code and Data Availability section of the paper referenced at the top of this README document. The DOI for the zenodo repository is: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8139380.svg)](https://doi.org/10.5281/zenodo.8139380)
+You will need to download and unzip/untar the tarballs from the Zenodo repository listed in the Code and Data Availability section of the paper referenced at the top of this README document. The DOI for the zenodo repository is: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10045596.svg)](https://doi.org/10.5281/zenodo.10045596)
 
 Your working directory should be the directory created by cloning this repository. Unpacking the tarballs from the Zenodo repository will result in the following subdirectories: `~/model_data`, `~/metadata`, and `~/metrics`, and `~/gauge_groups_for_paper`. All of these subdirectories should be placed in the working directory so that the working directory contains `~/notebooks` (and other subdirectories included in this Github repository), as well as `~/model_data` (and all other subdirectories from the Zenodo repository). 
 
