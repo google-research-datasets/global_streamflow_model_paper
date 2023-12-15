@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy as np
 import pandas as pd
+import string
 import tqdm
 
 from backend import data_paths
@@ -58,8 +59,11 @@ METRICS_AXIS_LIMITS = {
     'Pearson-r': (0, 1),
 }
 
-prop_cycle = plt.rcParams['axes.prop_cycle']
-COLORS = prop_cycle.by_key()['color']
+# prop_cycle = plt.rcParams['axes.prop_cycle']
+# COLORS = prop_cycle.by_key()['color']
+COLORS = ['#377eb8', '#ff7f00', '#4daf4a',
+          '#f781bf', '#a65628', '#984ea3',
+          '#999999', '#e41a1c', '#dede00']
 
 LEAD_TIME_LINESTYLES = ['-'] + [':']*8
 LEAD_TIME_ALPHAS = [0.8**lt for lt in data_paths.LEAD_TIMES]
@@ -467,7 +471,10 @@ def hydrograph_metrics_cdf_plots(
         )
     )
 
-    for ax, metric in zip(axes.flatten(), METRICS_AXIS_LIMITS):
+    panel_labels = [f'({letter})' for letter in list(string.ascii_lowercase)]  
+    
+    for ax, metric, panel_label in zip(
+        axes.flatten(), METRICS_AXIS_LIMITS, panel_labels):
         
         metric_filename =  f'{metric}.csv'
 
@@ -562,6 +569,17 @@ def hydrograph_metrics_cdf_plots(
             ax.get_ylabel(), 
             fontsize=NATURE_FONT_SIZES['axis_label']
         )
+        
+        panel_label_x_position = METRICS_AXIS_LIMITS[metric][0] + 0.05 * (METRICS_AXIS_LIMITS[metric][1] - METRICS_AXIS_LIMITS[metric][0])
+        
+        if ax != list(axes.flatten())[-1]:
+            ax.text(
+                panel_label_x_position, 1,
+                panel_label,
+                fontsize=NATURE_FONT_SIZES['axis_label'],
+                va='top',
+                fontweight="bold"
+            )
 
         
     # Plot the legend in a separate subplot.

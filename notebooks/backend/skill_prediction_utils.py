@@ -24,8 +24,8 @@ from typing import Optional
 
 from backend import evaluation_utils
 
-N_KFOLD = 25
-N_TREES = 100
+N_KFOLD = 3
+N_TREES = 10
 
 
 def make_predictors(
