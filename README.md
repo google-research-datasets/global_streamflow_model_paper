@@ -4,7 +4,7 @@
 
 This repository allows you to recreate the figures and statistics from the following paper:
 
-[Nearing, Grey, et al. "AI Increases Global Access to Reliable Flood Forecasts." arXiv preprint arXiv:2307.16104 (2023)](<https://arxiv.org/abs/2307.16104>)
+[Nearing, Grey, et al. "Global prediction of extreme floods in ungauged watersheds." Nature (2024).](<https://www.nature.com/articles/s41586-024-07145-1>)
 
 
 ## Table of Contents
@@ -62,6 +62,8 @@ In the file `~/notebooks/backend/data_paths.py` change the local variable `_WORK
 You will need to download and unzip/untar the tarballs from the Zenodo repository listed in the Code and Data Availability section of the paper referenced at the top of this README document. The DOI for the zenodo repository is: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10045596.svg)](https://doi.org/10.5281/zenodo.10045596)
 
 Your working directory should be the directory created by cloning this repository. Unpacking the tarballs from the Zenodo repository will result in the following subdirectories: `~/model_data`, `~/metadata`, and `~/metrics`, and `~/gauge_groups_for_paper`. All of these subdirectories should be placed in the working directory so that the working directory contains `~/notebooks` (and other subdirectories included in this Github repository), as well as `~/model_data` (and all other subdirectories from the Zenodo repository). 
+
+The model output data in this repository include reforecasts from the Google model and reanalyses from the GloFAS model. Google model outputs are in units [mm/day] and GloFAS outputs are in units [m3/s]. Modlel outputs are daily and timestamps are right-labeled, meaning that model ouputs labeled, .e.g., 01/01/2020 correspond to streamflow predictions for the day of 12/31/2019. 
 
 ### (Not Required) Step 2: Download GRDC Streamflow Observation Data
 Due to licensing restrictions, we are not allowed to share streamflow observation data from the Global Runoff Data Center (GRDC). Using the [GRDC Data Portal](https://portal.grdc.bafg.de/applications/public.html?publicuser=PublicUser), download GRDC data for all stations that are listed in the `~/gauge_groups/dual_lstm/grdc_filtered.txt` file. Download these as daily NetCDF files. This requires registering with the GRDC. You will likely have to download these data in multiple batches, resulting in multiple NetCDF files. If that is the case, name each of the NetCDF files uniqely and put them into a single directory somewhere on your local machine. Point to that directory using the `GRDC_DATA_DOWNLOAD_DIRECTORY` variable in the `~/notebooks/backend/data_paths.py` file, and then run the `~/notebooks/concatenate_grdc_downloads.ipynb` notebook to concatenate the download files into one netcdf file.
