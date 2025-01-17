@@ -20,7 +20,7 @@ This repository allows you to recreate the figures and statistics from the follo
 ## Overview
 The code in this repository is structured so that all analysis can be done with python notebooks in the `~/notebooks` directory. The expected runtime is approxiamtely one day for the full analysis. The steps are as follows:
 
-1) Download model data, metadata, and pre-calculated metrics from the associated Zenodo repository [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10397664.svg)](https://zenodo.org/records/10397664).
+1) Download model data, metadata, and pre-calculated metrics from the associated Zenodo repository [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10397664.svg)](https://doi.org/10.5281/zenodo.10397664).
 
 2) Download and prepare Global Runoff Data Center (GRDC) streamflow observation data and model simulation data. This step is not necessary if you want to use the pre-calculated statistics included in the Zenodo repository.
 
