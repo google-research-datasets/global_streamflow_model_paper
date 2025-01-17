@@ -59,7 +59,7 @@ In the file `~/notebooks/backend/data_paths.py` change the local variable `_WORK
 
 ### Step 1: Download Model Data
 
-You will need to download and unzip/untar the tarballs from the Zenodo repository listed in the Code and Data Availability section of the paper referenced at the top of this README document. The DOI for the zenodo repository is: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10045596.svg)](https://doi.org/10.5281/zenodo.10045596)
+You will need to download and unzip/untar the tarballs from the Zenodo repository listed in the Code and Data Availability section of the paper referenced at the top of this README document. The DOI for the zenodo repository is: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10397664.svg)](https://doi.org/10.5281/zenodo.10397664)
 
 Your working directory should be the directory created by cloning this repository. Unpacking the tarballs from the Zenodo repository will result in the following subdirectories: `~/model_data`, `~/metadata`, and `~/metrics`, and `~/gauge_groups_for_paper`. All of these subdirectories should be placed in the working directory so that the working directory contains `~/notebooks` (and other subdirectories included in this Github repository), as well as `~/model_data` (and all other subdirectories from the Zenodo repository). 
 
